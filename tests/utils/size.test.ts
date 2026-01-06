@@ -1,4 +1,8 @@
-import { getSizeInBytes, getCacheSizeInBytes } from '../../src/utils/size';
+import {
+  getSizeInBytes,
+  getCacheSizeInBytes,
+  getEntrySize,
+} from '../../src/utils/size';
 import { CacheEntry } from '../../src/types';
 
 describe('Size Utils', () => {
@@ -74,5 +78,27 @@ describe('Size Utils', () => {
       expect(size).toBe(0);
     });
   });
-});
 
+  describe('getEntrySize', () => {
+    it('should calculate entry size consistently with getCacheSizeInBytes', () => {
+      const storage = new Map<string, CacheEntry<string>>();
+      storage.set('key1', {
+        value: 'value1',
+        createdAt: Date.now(),
+      });
+      storage.set('key2', {
+        value: 'value2',
+        createdAt: Date.now(),
+      });
+
+      const totalSize = getCacheSizeInBytes(storage);
+      const entry1Size = getEntrySize('key1', 'value1');
+      const entry2Size = getEntrySize('key2', 'value2');
+
+      // Total should be approximately sum of individual entries
+      // (allowing for small rounding differences)
+      expect(totalSize).toBeGreaterThanOrEqual(entry1Size + entry2Size - 10);
+      expect(totalSize).toBeLessThanOrEqual(entry1Size + entry2Size + 10);
+    });
+  });
+});

@@ -4,5 +4,12 @@ import { CacheRegistry } from './utils/registry';
 CacheRegistry.startMonitoring(5000);
 
 export { Cache } from './cache';
-export type { CacheOptions, CacheEntry, CacheAlarm } from './types';
+export type {
+  CacheOptions,
+  CacheEntry,
+  CacheAlarm,
+  EvictionPolicy,
+  CacheEvent,
+  CacheEventHandler,
+} from './types';
 export * from './operations';

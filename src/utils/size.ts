@@ -61,6 +61,19 @@ export function getSizeInBytes(obj: any): number {
 }
 
 /**
+ * Calculate the size of a single cache entry (key + value + overhead)
+ * This matches the calculation used in getCacheSizeInBytes for consistency
+ */
+export function getEntrySize<K, V>(key: K, value: V): number {
+  return (
+    getSizeInBytes(key) + // Key size
+    getSizeInBytes(value) + // Value size
+    48 + // Map entry overhead + object overhead
+    16 // Metadata (createdAt, expiresAt, lastAccessed) - 2-3 numbers * 8 bytes
+  );
+}
+
+/**
  * Calculate the total size in bytes of a cache storage
  */
 export function getCacheSizeInBytes<K, V>(
@@ -71,17 +84,16 @@ export function getCacheSizeInBytes<K, V>(
   for (const [key, entry] of storage.entries()) {
     // Size of key
     totalSize += getSizeInBytes(key);
-    
+
     // Size of entry object overhead (~48 bytes for Map entry + object overhead)
     totalSize += 48;
-    
+
     // Size of value
     totalSize += getSizeInBytes(entry.value);
-    
-    // Size of metadata (createdAt, expiresAt)
-    totalSize += 16; // 2 numbers * 8 bytes
+
+    // Size of metadata (createdAt, expiresAt, lastAccessed)
+    totalSize += 16; // 2-3 numbers * 8 bytes
   }
 
   return totalSize;
 }
-

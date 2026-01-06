@@ -3,8 +3,7 @@ import { GetOperations, get } from './get';
 import { SetOperations, set } from './set';
 
 export interface MutateOperations<K, V>
-  extends GetOperations<K, V>,
-    SetOperations<K, V> {}
+  extends GetOperations<K, V>, SetOperations<K, V> {}
 
 /**
  * Update an existing value using a function
@@ -77,14 +76,79 @@ export function append<K, T>(
   return mutate(operations, key, (value) => [...value, ...items]);
 }
 
-/**
- * Merge an object value
- */
-export function merge<K, T extends Record<string, any>>(
-  operations: MutateOperations<K, T>,
-  key: K,
-  updates: Partial<T>
-): T | undefined {
-  return mutate(operations, key, (value) => ({ ...value, ...updates }));
+export interface MergeOptions {
+  allowDuplicates?: boolean; // Allow duplicates when merging arrays (default: false)
 }
 
+/**
+ * Merge values based on type:
+ * - Objects: Shallow merge properties
+ * - Arrays: Concatenate (with optional duplicate filtering)
+ * - Strings: Concatenate
+ * - Numbers: Concatenate as strings then convert back to number (4 + 2 = 42)
+ */
+export function merge<K, V>(
+  operations: MutateOperations<K, V>,
+  key: K,
+  updates: any,
+  options?: MergeOptions
+): V | undefined {
+  const currentValue = get(operations, key);
+  if (currentValue === undefined) {
+    return undefined;
+  }
+
+  const allowDuplicates = options?.allowDuplicates ?? false;
+
+  let mergedValue: any;
+
+  // Handle arrays
+  if (Array.isArray(currentValue) && Array.isArray(updates)) {
+    if (allowDuplicates) {
+      mergedValue = [...currentValue, ...updates];
+    } else {
+      // Remove duplicates using Set for primitives, or deep comparison for objects
+      const seen = new Set<string>();
+      const result: any[] = [];
+
+      for (const item of [...currentValue, ...updates]) {
+        const key =
+          typeof item === 'object' && item !== null
+            ? JSON.stringify(item)
+            : String(item);
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push(item);
+        }
+      }
+      mergedValue = result;
+    }
+  }
+  // Handle strings
+  else if (typeof currentValue === 'string' && typeof updates === 'string') {
+    mergedValue = currentValue + updates;
+  }
+  // Handle numbers
+  else if (typeof currentValue === 'number' && typeof updates === 'number') {
+    // Concatenate as strings then convert back to number
+    mergedValue = Number(String(currentValue) + String(updates));
+  }
+  // Handle objects
+  else if (
+    typeof currentValue === 'object' &&
+    currentValue !== null &&
+    !Array.isArray(currentValue) &&
+    typeof updates === 'object' &&
+    updates !== null &&
+    !Array.isArray(updates)
+  ) {
+    mergedValue = { ...currentValue, ...updates };
+  }
+  // Fallback: return updates if types don't match
+  else {
+    mergedValue = updates;
+  }
+
+  set(operations, key, mergedValue);
+  return mergedValue as V;
+}
