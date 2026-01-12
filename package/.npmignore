@@ -1,0 +1,31 @@
+# Source files (not needed in npm package)
+src/
+tests/
+
+# Development files
+*.log
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+
+# Development configs
+jest.config.js
+tsconfig.json
+rollup.config.mjs
+.eslintrc.json
+.prettierrc
+
+# Git
+.git/
+.gitignore
+
+# Coverage
+coverage/
+
+# Node modules (shouldn't be needed, but just in case)
+node_modules/
+
+# Build artifacts sourcemaps (optional - remove if you want to include them)
+# dist/*.map
+
